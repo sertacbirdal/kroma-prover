@@ -1,7 +1,5 @@
 use clap::{ArgEnum, Parser};
-use halo2_proofs::consts::SEED;
-use rand::SeedableRng;
-use rand_xorshift::XorShiftRng;
+use halo2_proofs::{consts::SEED, halo2curves::bn256::Bn256, poly::kzg::commitment::ParamsKZG};
 use std::{
     collections::HashMap,
     ffi::OsString,
@@ -10,7 +8,7 @@ use std::{
     path::PathBuf,
 };
 use types::eth::BlockTrace;
-use utils::{check_chain_id, Measurer};
+use utils::{check_chain_id, is_tachyon, Measurer};
 use zkevm::{
     circuit::{EvmCircuit, StateCircuit, AGG_DEGREE, DEGREE, MAX_TXS},
     io::write_file,
@@ -38,6 +36,9 @@ struct Args {
     /// Specify circuit type in [evm, state, agg].
     #[clap(short, long, arg_enum)]
     circuit: CircuitType,
+    /// Specify whether to create `Verifier.sol`. (default: true)
+    #[clap(default_value_t = true, short, long = "gen_sol")]
+    gen_sol: bool,
 }
 
 impl Args {
@@ -61,6 +62,19 @@ impl Args {
         traces
     }
 
+    fn load_params(&self) -> (ParamsKZG<Bn256>, Option<ParamsKZG<Bn256>>) {
+        let params = load_kzg_params(&self.params_dir, *DEGREE).expect("failed to load kzg params");
+        let agg_params = match self.circuit {
+            CircuitType::AGG => {
+                let params = load_kzg_params(&self.params_dir, *AGG_DEGREE)
+                    .expect("failed to load kzg agg params");
+                Some(params)
+            }
+            _ => None,
+        };
+        (params, agg_params)
+    }
+
     fn panic_if_tx_too_many(trace: &BlockTrace) {
         let tx_count = trace.transactions.len();
         if tx_count > MAX_TXS {
@@ -80,17 +94,14 @@ fn main() {
     env_logger::init();
 
     let chain_id = check_chain_id();
-    log::info!("chain_id: {chain_id}");
+    let is_tachyon = is_tachyon();
+    log::info!("chain_id: {chain_id}, tachyon: {is_tachyon}");
     let args = Args::parse();
 
     // Prepare KZG params and rng for prover
     let mut timer = Measurer::new();
-    let params = load_kzg_params(&args.params_dir, *DEGREE).expect("failed to load kzg params");
-    let agg_params =
-        load_kzg_params(&args.params_dir, *AGG_DEGREE).expect("failed to load kzg agg params");
-    let rng = XorShiftRng::from_seed(SEED);
-
-    let mut prover = Prover::from_params_and_rng(params, agg_params, rng);
+    let (params, agg_params) = args.load_params();
+    let mut prover = Prover::from_params_and_seed(params, agg_params, SEED);
     timer.end("finish loading params");
 
     // Getting traces from specific directory
@@ -124,17 +135,20 @@ fn main() {
             CircuitType::AGG => {
                 let mut proof_path = PathBuf::from(&trace_name).join("agg.proof");
                 let agg_proof = prover
-                    .create_agg_circuit_proof(&trace)
+                    .create_agg_circuit_proof(&trace, args.gen_sol)
                     .expect("cannot generate agg_proof");
                 fs::create_dir_all(&proof_path).unwrap();
                 agg_proof.write_to_dir(&mut proof_path);
 
-                let sol = prover.create_solidity_verifier(&agg_proof);
-                write_file(
-                    &mut out_dir,
-                    "verifier.sol",
-                    &Vec::<u8>::from(sol.as_bytes()),
-                );
+                if args.gen_sol {
+                    let sol = prover.create_solidity_verifier(&agg_proof);
+                    write_file(
+                        &mut out_dir,
+                        "verifier.sol",
+                        &Vec::<u8>::from(sol.as_bytes()),
+                    );
+                    log::info!("verifier solidity to {}", out_dir.to_str().unwrap());
+                }
                 log::info!("output files to {}", out_dir.to_str().unwrap());
             }
         }

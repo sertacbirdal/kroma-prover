@@ -44,4 +44,6 @@ name = "mock-client"
 path = "src/mock_client.rs"
 
 [features]
+default = []
 mock-server = []
+tachyon = ["utils/tachyon", "zkevm/tachyon"]

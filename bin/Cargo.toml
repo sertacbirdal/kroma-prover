@@ -25,6 +25,10 @@ types = { path = "../types", features = ["test"] }
 utils = { path = "../utils" }
 halo2_proofs = { git = "https://github.com/privacy-scaling-explorations/halo2.git", tag = "v2022_09_10" }
 
+[features]
+default = []
+tachyon = ["utils/tachyon", "zkevm/tachyon"]
+
 [[bin]]
 name = "setup"
 path = "src/setup.rs"

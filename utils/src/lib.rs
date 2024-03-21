@@ -41,3 +41,10 @@ pub fn check_chain_id() -> String {
     }
     chain_id
 }
+
+pub fn is_tachyon() -> bool {
+    #[cfg(not(feature = "tachyon"))]
+    return false;
+    #[cfg(feature = "tachyon")]
+    return true;
+}

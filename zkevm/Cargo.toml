@@ -47,6 +47,7 @@ procfs = "0.13.0"
 default = []
 #default = ["prove_verify"]
 prove_verify = []
+tachyon = []
 
 [dev-dependencies]
 git-version = "0.3.5"
