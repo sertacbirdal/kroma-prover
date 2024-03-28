@@ -1,4 +1,5 @@
 use clap::Parser;
+use halo2_proofs::consts::SEED;
 use rand::SeedableRng;
 use rand_xorshift::XorShiftRng;
 use std::collections::HashMap;
@@ -12,7 +13,7 @@ use zkevm::{
     circuit::{EvmCircuit, StateCircuit, AGG_DEGREE, DEGREE, MAX_TXS},
     io::write_file,
     prover::Prover,
-    utils::{get_block_trace_from_file, load_kzg_params, load_or_create_seed},
+    utils::{get_block_trace_from_file, load_kzg_params},
 };
 
 #[derive(Parser, Debug)]
@@ -21,9 +22,6 @@ struct Args {
     /// Get params and write into file.
     #[clap(short, long = "params")]
     params_path: Option<String>,
-    /// Get seed and write into file.
-    #[clap(long = "seed")]
-    seed_path: Option<String>,
     /// Get BlockTrace from file or dir.
     #[clap(short, long = "trace")]
     trace_path: Option<String>,
@@ -55,9 +53,7 @@ fn main() {
         .expect("failed to load kzg params");
     let agg_params = load_kzg_params(&args.params_path.unwrap(), *AGG_DEGREE)
         .expect("failed to load kzg params");
-    let seed =
-        load_or_create_seed(&args.seed_path.unwrap()).expect("failed to load or create seed");
-    let rng = XorShiftRng::from_seed(seed);
+    let rng = XorShiftRng::from_seed(SEED);
 
     let mut prover = Prover::from_params_and_rng(params, agg_params, rng);
     timer.end("finish loading params");
