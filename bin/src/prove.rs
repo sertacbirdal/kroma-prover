@@ -22,9 +22,9 @@ struct Args {
     /// Specify directory which params have stored in. (default: ./kzg_params)
     #[clap(default_value = "./kzg_params", short, long)]
     params_dir: String,
-    /// Get BlockTrace from file or dir.
-    #[clap(short, long = "trace")]
-    trace_path: Option<String>,
+    /// Specify path to block trace. (json file or directory)
+    #[clap(short, long)]
+    trace_path: String,
     /// Option means if generates evm proof.
     /// Boolean means if output evm proof.
     #[clap(long = "evm")]
@@ -59,7 +59,7 @@ fn main() {
 
     // Getting traces from specific directory
     let mut traces = HashMap::new();
-    let trace_path = PathBuf::from(&args.trace_path.unwrap());
+    let trace_path = PathBuf::from(&args.trace_path);
     if trace_path.is_dir() {
         for entry in fs::read_dir(trace_path).unwrap() {
             let path = entry.unwrap().path();
