@@ -4,9 +4,9 @@ use zkevm::{circuit::DEGREE, utils::load_or_create_params};
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// generate params and write into file
-    #[clap(short, long = "params")]
-    params_path: Option<String>,
+    /// Specify directory which params have stored in. (default: ./kzg_params)
+    #[clap(default_value = "./kzg_params", short, long)]
+    params_dir: String,
 }
 
 fn main() {

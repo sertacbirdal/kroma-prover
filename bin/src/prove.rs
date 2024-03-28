@@ -19,9 +19,9 @@ use zkevm::{
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// Get params and write into file.
-    #[clap(short, long = "params")]
-    params_path: Option<String>,
+    /// Specify directory which params have stored in. (default: ./kzg_params)
+    #[clap(default_value = "./kzg_params", short, long)]
+    params_dir: String,
     /// Get BlockTrace from file or dir.
     #[clap(short, long = "trace")]
     trace_path: Option<String>,
@@ -49,10 +49,9 @@ fn main() {
 
     // Prepare KZG params and rng for prover
     let mut timer = Measurer::new();
-    let params = load_kzg_params(&args.params_path.clone().unwrap(), *DEGREE)
-        .expect("failed to load kzg params");
-    let agg_params = load_kzg_params(&args.params_path.unwrap(), *AGG_DEGREE)
-        .expect("failed to load kzg params");
+    let params = load_kzg_params(&args.params_dir, *DEGREE).expect("failed to load kzg params");
+    let agg_params =
+        load_kzg_params(&args.params_dir, *AGG_DEGREE).expect("failed to load kzg agg params");
     let rng = XorShiftRng::from_seed(SEED);
 
     let mut prover = Prover::from_params_and_rng(params, agg_params, rng);
