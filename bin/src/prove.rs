@@ -3,10 +3,12 @@ use halo2_proofs::consts::SEED;
 use rand::SeedableRng;
 use rand_xorshift::XorShiftRng;
 use std::collections::HashMap;
+use std::ffi::OsString;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use types::eth::BlockTrace;
 use utils::check_chain_id;
 use utils::Measurer;
 use zkevm::{
@@ -38,6 +40,41 @@ struct Args {
     circuit: CircuitType,
 }
 
+impl Args {
+    fn load_traces(&self) -> HashMap<OsString, BlockTrace> {
+        let mut traces = HashMap::new();
+        let trace_path = PathBuf::from(&self.trace_path);
+        if trace_path.is_dir() {
+            for entry in fs::read_dir(trace_path).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_file() && path.to_str().unwrap().ends_with(".json") {
+                    let block_trace = get_block_trace_from_file(path.to_str().unwrap());
+                    Args::panic_if_tx_too_many(&block_trace);
+                    traces.insert(path.file_stem().unwrap().to_os_string(), block_trace);
+                }
+            }
+        } else {
+            let block_trace = get_block_trace_from_file(trace_path.to_str().unwrap());
+            Args::panic_if_tx_too_many(&block_trace);
+            traces.insert(trace_path.file_stem().unwrap().to_os_string(), block_trace);
+        }
+        traces
+    }
+
+    fn panic_if_tx_too_many(trace: &BlockTrace) {
+        let tx_count = trace.transactions.len();
+        if tx_count > MAX_TXS {
+            panic!(
+                "{}",
+                format!(
+                    "too many transactions. MAX_TXS: {}, given transactions: {}",
+                    MAX_TXS, tx_count
+                )
+            );
+        }
+    }
+}
+
 fn main() {
     dotenv::dotenv().ok();
     env_logger::init();
@@ -57,78 +94,49 @@ fn main() {
     timer.end("finish loading params");
 
     // Getting traces from specific directory
-    let mut traces = HashMap::new();
-    let trace_path = PathBuf::from(&args.trace_path);
-    if trace_path.is_dir() {
-        for entry in fs::read_dir(trace_path).unwrap() {
-            let path = entry.unwrap().path();
-            if path.is_file() && path.to_str().unwrap().ends_with(".json") {
-                let block_trace = get_block_trace_from_file(path.to_str().unwrap());
-                traces.insert(path.file_stem().unwrap().to_os_string(), block_trace);
-            }
-        }
-    } else {
-        let block_trace = get_block_trace_from_file(trace_path.to_str().unwrap());
-        traces.insert(trace_path.file_stem().unwrap().to_os_string(), block_trace);
-    }
+    let traces = args.load_traces();
 
     // Generating proofs for each trace
     let mut outer_timer = Measurer::new();
     for (trace_name, trace) in traces {
-        let tx_count = trace.transactions.len();
-        if tx_count > MAX_TXS {
-            panic!(
-                "{}",
-                format!(
-                    "too many transactions. MAX_TXS: {}, given transactions: {}",
-                    MAX_TXS, tx_count
-                )
-            );
-        }
         let mut out_dir = PathBuf::from(&trace_name);
         fs::create_dir_all(&out_dir).unwrap();
+        prover.debug_dir = String::from(out_dir.to_str().unwrap());
 
         timer.start();
-        prover.debug_dir = String::from(out_dir.to_str().unwrap());
-        if args.circuit == CircuitType::EVM {
-            let proof_path = PathBuf::from(&trace_name).join("evm.proof");
+        match args.circuit {
+            CircuitType::EVM => {
+                let proof_path = PathBuf::from(&trace_name).join("evm.proof");
+                let evm_proof = prover
+                    .create_target_circuit_proof::<EvmCircuit>(&trace)
+                    .expect("cannot generate evm_proof");
+                let mut f = File::create(&proof_path).unwrap();
+                f.write_all(evm_proof.proof.as_slice()).unwrap();
+            }
+            CircuitType::STATE => {
+                let proof_path = PathBuf::from(&trace_name).join("state.proof");
+                let state_proof = prover
+                    .create_target_circuit_proof::<StateCircuit>(&trace)
+                    .expect("cannot generate state_proof");
+                let mut f = File::create(&proof_path).unwrap();
+                f.write_all(state_proof.proof.as_slice()).unwrap();
+            }
+            CircuitType::AGG => {
+                let mut proof_path = PathBuf::from(&trace_name).join("agg.proof");
+                let agg_proof = prover
+                    .create_agg_circuit_proof(&trace)
+                    .expect("cannot generate agg_proof");
+                fs::create_dir_all(&proof_path).unwrap();
+                agg_proof.write_to_dir(&mut proof_path);
 
-            let evm_proof = prover
-                .create_target_circuit_proof::<EvmCircuit>(&trace)
-                .expect("cannot generate evm_proof");
-
-            let mut f = File::create(&proof_path).unwrap();
-            f.write_all(evm_proof.proof.as_slice()).unwrap();
-        }
-
-        if args.circuit == CircuitType::STATE {
-            let proof_path = PathBuf::from(&trace_name).join("state.proof");
-
-            let state_proof = prover
-                .create_target_circuit_proof::<StateCircuit>(&trace)
-                .expect("cannot generate state_proof");
-
-            let mut f = File::create(&proof_path).unwrap();
-            f.write_all(state_proof.proof.as_slice()).unwrap();
-        }
-
-        if args.circuit == CircuitType::AGG {
-            let mut proof_path = PathBuf::from(&trace_name).join("agg.proof");
-
-            let agg_proof = prover
-                .create_agg_circuit_proof(&trace)
-                .expect("cannot generate agg_proof");
-
-            fs::create_dir_all(&proof_path).unwrap();
-            agg_proof.write_to_dir(&mut proof_path);
-
-            let sol = prover.create_solidity_verifier(&agg_proof);
-            write_file(
-                &mut out_dir,
-                "verifier.sol",
-                &Vec::<u8>::from(sol.as_bytes()),
-            );
-            log::info!("output files to {}", out_dir.to_str().unwrap());
+                let sol = prover.create_solidity_verifier(&agg_proof);
+                write_file(
+                    &mut out_dir,
+                    "verifier.sol",
+                    &Vec::<u8>::from(sol.as_bytes()),
+                );
+                log::info!("output files to {}", out_dir.to_str().unwrap());
+            }
         }
         timer.end("finish generating a proof");
     }
