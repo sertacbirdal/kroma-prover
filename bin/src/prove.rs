@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{ArgEnum, Parser};
 use halo2_proofs::consts::SEED;
 use rand::SeedableRng;
 use rand_xorshift::XorShiftRng;
@@ -16,6 +16,14 @@ use zkevm::{
     utils::{get_block_trace_from_file, load_kzg_params},
 };
 
+#[derive(ArgEnum, Debug, Clone, PartialEq)]
+#[clap(rename_all = "kebab_case")]
+enum CircuitType {
+    EVM,
+    STATE,
+    AGG,
+}
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -25,18 +33,9 @@ struct Args {
     /// Specify path to block trace. (json file or directory)
     #[clap(short, long)]
     trace_path: String,
-    /// Option means if generates evm proof.
-    /// Boolean means if output evm proof.
-    #[clap(long = "evm")]
-    evm_proof: Option<bool>,
-    /// Option means if generates state proof.
-    /// Boolean means if output state proof.
-    #[clap(long = "state")]
-    state_proof: Option<bool>,
-    /// Option means if generates agg proof.
-    /// Boolean means if output agg proof.
-    #[clap(long = "agg")]
-    agg_proof: Option<bool>,
+    /// Specify circuit type in [evm, state, agg].
+    #[clap(short, long, arg_enum)]
+    circuit: CircuitType,
 }
 
 fn main() {
@@ -91,43 +90,37 @@ fn main() {
 
         timer.start();
         prover.debug_dir = String::from(out_dir.to_str().unwrap());
-        if args.evm_proof.is_some() {
+        if args.circuit == CircuitType::EVM {
             let proof_path = PathBuf::from(&trace_name).join("evm.proof");
 
             let evm_proof = prover
                 .create_target_circuit_proof::<EvmCircuit>(&trace)
                 .expect("cannot generate evm_proof");
 
-            if args.evm_proof.unwrap() {
-                let mut f = File::create(&proof_path).unwrap();
-                f.write_all(evm_proof.proof.as_slice()).unwrap();
-            }
+            let mut f = File::create(&proof_path).unwrap();
+            f.write_all(evm_proof.proof.as_slice()).unwrap();
         }
 
-        if args.state_proof.is_some() {
+        if args.circuit == CircuitType::STATE {
             let proof_path = PathBuf::from(&trace_name).join("state.proof");
 
             let state_proof = prover
                 .create_target_circuit_proof::<StateCircuit>(&trace)
                 .expect("cannot generate state_proof");
 
-            if args.state_proof.unwrap() {
-                let mut f = File::create(&proof_path).unwrap();
-                f.write_all(state_proof.proof.as_slice()).unwrap();
-            }
+            let mut f = File::create(&proof_path).unwrap();
+            f.write_all(state_proof.proof.as_slice()).unwrap();
         }
 
-        if args.agg_proof.is_some() {
+        if args.circuit == CircuitType::AGG {
             let mut proof_path = PathBuf::from(&trace_name).join("agg.proof");
 
             let agg_proof = prover
                 .create_agg_circuit_proof(&trace)
                 .expect("cannot generate agg_proof");
 
-            if args.agg_proof.unwrap() {
-                fs::create_dir_all(&proof_path).unwrap();
-                agg_proof.write_to_dir(&mut proof_path);
-            }
+            fs::create_dir_all(&proof_path).unwrap();
+            agg_proof.write_to_dir(&mut proof_path);
 
             let sol = prover.create_solidity_verifier(&agg_proof);
             write_file(
