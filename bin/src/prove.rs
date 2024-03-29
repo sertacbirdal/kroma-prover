@@ -2,15 +2,15 @@ use clap::{ArgEnum, Parser};
 use halo2_proofs::consts::SEED;
 use rand::SeedableRng;
 use rand_xorshift::XorShiftRng;
-use std::collections::HashMap;
-use std::ffi::OsString;
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-use std::path::PathBuf;
+use std::{
+    collections::HashMap,
+    ffi::OsString,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+};
 use types::eth::BlockTrace;
-use utils::check_chain_id;
-use utils::Measurer;
+use utils::{check_chain_id, Measurer};
 use zkevm::{
     circuit::{EvmCircuit, StateCircuit, AGG_DEGREE, DEGREE, MAX_TXS},
     io::write_file,

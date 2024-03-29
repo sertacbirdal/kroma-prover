@@ -1,7 +1,3 @@
-use std::collections::HashMap;
-use std::io::Cursor;
-use std::path::PathBuf;
-
 use crate::circuit::{
     block_traces_to_witness_block, check_batch_capacity, SuperCircuit, TargetCircuit, AGG_DEGREE,
     DEGREE,
@@ -11,19 +7,22 @@ use crate::io::{
     serialize_verify_circuit_final_pair, serialize_vk, write_verify_circuit_final_pair,
     write_verify_circuit_instance, write_verify_circuit_proof, write_verify_circuit_vk,
 };
-use crate::utils::{load_or_create_params, read_env_var};
-use crate::utils::{load_seed, metric_of_witness_block};
+use crate::utils::{load_or_create_params, load_seed, metric_of_witness_block, read_env_var};
 use anyhow::{bail, Error};
-use halo2_proofs::dev::MockProver;
-use halo2_proofs::halo2curves::bn256::{Bn256, Fr, G1Affine};
-use halo2_proofs::plonk::{
-    create_proof, keygen_pk, keygen_pk2, keygen_vk, ProvingKey, VerifyingKey,
+use halo2_proofs::{
+    dev::MockProver,
+    halo2curves::bn256::{Bn256, Fr, G1Affine},
+    plonk::{create_proof, keygen_pk, keygen_pk2, keygen_vk, ProvingKey, VerifyingKey},
+    poly::{
+        commitment::ParamsProver,
+        kzg::{
+            commitment::{KZGCommitmentScheme, ParamsKZG, ParamsVerifierKZG},
+            multiopen::ProverGWC,
+        },
+    },
+    transcript::{Challenge255, PoseidonWrite},
+    SerdeFormat,
 };
-use halo2_proofs::poly::commitment::ParamsProver;
-use halo2_proofs::poly::kzg::commitment::{KZGCommitmentScheme, ParamsKZG, ParamsVerifierKZG};
-use halo2_proofs::poly::kzg::multiopen::ProverGWC;
-use halo2_proofs::transcript::{Challenge255, PoseidonWrite};
-use halo2_proofs::SerdeFormat;
 use halo2_snark_aggregator_api::transcript::sha::ShaWrite;
 use halo2_snark_aggregator_circuit::verify_circuit::{
     final_pair_to_instances, Halo2CircuitInstance, Halo2CircuitInstances, Halo2VerifierCircuit,
@@ -32,12 +31,11 @@ use halo2_snark_aggregator_circuit::verify_circuit::{
 use halo2_snark_aggregator_solidity::{MultiCircuitSolidityGenerate, SolidityGenerate};
 use log::info;
 use once_cell::sync::Lazy;
-
 use rand::SeedableRng;
 use rand_xorshift::XorShiftRng;
 use serde_derive::{Deserialize, Serialize};
-use types::base64;
-use types::eth::BlockTrace;
+use std::{collections::HashMap, io::Cursor, path::PathBuf};
+use types::{base64, eth::BlockTrace};
 
 #[cfg(target_os = "linux")]
 extern crate procfs;
