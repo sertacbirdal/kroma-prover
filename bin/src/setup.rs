@@ -1,18 +1,18 @@
 use clap::Parser;
 use zkevm::{
-    circuit::DEGREE,
-    utils::{load_or_create_params, load_or_create_seed},
+    circuit::{AGG_DEGREE, DEGREE},
+    utils::create_kzg_params_to_file,
 };
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// generate params and write into file
-    #[clap(short, long = "params")]
-    params_path: Option<String>,
-    /// generate seed and write into file
-    #[clap(short, long = "seed")]
-    seed_path: Option<String>,
+    /// Specify directory which params have stored in. (default: ./kzg_params)
+    #[clap(default_value = "./kzg_params", short, long)]
+    params_dir: String,
+    /// Specify domain size. (generate 2 params with `DEGREE`/`AGG_DEGREE` if it is omitted.)
+    #[clap(default_value_t = 0, short)]
+    n: usize,
 }
 
 fn main() {
@@ -20,10 +20,13 @@ fn main() {
     env_logger::init();
 
     let args = Args::parse();
-    if let Some(path) = args.params_path {
-        load_or_create_params(&path, *DEGREE).expect("failed to load or create params");
-    }
-    if let Some(path) = args.seed_path {
-        load_or_create_seed(&path).expect("failed to load or create seed");
+    let params_dir = &args.params_dir;
+    if args.n == 0 {
+        let _ = create_kzg_params_to_file(params_dir, *DEGREE);
+        let _ = create_kzg_params_to_file(params_dir, *AGG_DEGREE);
+    } else if args.n > 30 {
+        panic!("too big domain size, you should enter `n` less than 30");
+    } else {
+        let _ = create_kzg_params_to_file(params_dir, args.n);
     }
 }
