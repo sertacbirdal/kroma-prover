@@ -5,7 +5,7 @@ This [Prover](https://github.com/kroma-network/kroma/blob/dev/specs/zkevm-prover
 
 ## Requirements
 
-- Rust(rustc 1.68.0-nightly)
+- Rust(rustc 1.70.0-nightly)
 - Golang (go1.20.3)
 - `axel` installed for downloading KZG params
 
