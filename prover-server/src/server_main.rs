@@ -6,7 +6,7 @@ use prove::{create_proof, ProofResult};
 use prover_server::prove;
 use prover_server::prover_error::ProverError;
 use prover_server::spec::ZkSpec;
-use prover_server::utils::kroma_info;
+use prover_server::utils::{is_cancun_trace, kroma_info};
 use types::eth::BlockTrace;
 use utils::check_chain_id;
 use zkevm::circuit::{CHAIN_ID, MAX_TXS};
@@ -45,6 +45,11 @@ impl Rpc for RpcImpl {
     /// # Returns
     /// ProofResult instance which includes proof and final pair.
     fn prove(&self, trace: String) -> JsonResult<ProofResult> {
+        if is_cancun_trace(&trace) {
+            let err = ProverError::opcode_not_supported("cancun opcode not supported".into());
+            return JsonResult::Err(JsonError::from(err));
+        }
+
         // initiate BlockTrace
         let block_trace: BlockTrace = match serde_json::from_slice(trace.as_bytes()) {
             Ok(trace) => trace,
