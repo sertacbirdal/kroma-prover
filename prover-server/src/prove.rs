@@ -1,5 +1,5 @@
+use crate::prover_error::ProverError;
 use crate::utils::{kroma_info, kroma_msg};
-use jsonrpc_core::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::create_dir_all;
@@ -26,12 +26,16 @@ impl ProofResult {
     }
 }
 
-pub fn create_proof(trace: BlockTrace) -> Result<ProofResult> {
+pub fn create_proof(trace: BlockTrace) -> Result<ProofResult, ProverError> {
     // load or create material for prover
-    let params = load_kzg_params(PARAMS_DIR, *DEGREE)
-        .unwrap_or_else(|_| panic!("{}", kroma_msg("failed to load kzg params")));
-    let agg_params = load_kzg_params(PARAMS_DIR, *AGG_DEGREE)
-        .unwrap_or_else(|_| panic!("{}", kroma_msg("failed to load kzg agg params")));
+    let params = load_kzg_params(PARAMS_DIR, *DEGREE);
+    let agg_params = load_kzg_params(PARAMS_DIR, *AGG_DEGREE);
+    if params.is_err() || agg_params.is_err() {
+        return Err(ProverError::kzg_params_not_found());
+    }
+    let params = params.unwrap();
+    let agg_params = agg_params.unwrap();
+
     let seed = load_or_create_seed(SEED_FILE)
         .unwrap_or_else(|_| panic!("{}", kroma_msg("failed to load or create seed")));
 
@@ -48,7 +52,7 @@ pub fn create_proof(trace: BlockTrace) -> Result<ProofResult> {
     create_agg_proof(prover, trace)
 }
 
-pub fn create_agg_proof(mut prover: Prover, trace: BlockTrace) -> Result<ProofResult> {
+pub fn create_agg_proof(mut prover: Prover, trace: BlockTrace) -> Result<ProofResult, ProverError> {
     kroma_info("start creating proof");
 
     // generate proof

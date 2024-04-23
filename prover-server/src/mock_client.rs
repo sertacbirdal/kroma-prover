@@ -1,14 +1,10 @@
-pub mod prove;
-pub mod spec;
-pub mod utils;
-
-use crate::prove::ProofResult;
-use crate::spec::ZkSpec;
-use crate::utils::kroma_info;
 use clap::Parser;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 use jsonrpsee_core::client::ClientT;
 use jsonrpsee_core::rpc_params;
+use prover_server::prove::ProofResult;
+use prover_server::spec::ZkSpec;
+use prover_server::utils::kroma_info;
 use std::fs;
 use std::time::Duration;
 use types::eth::BlockTrace;
