@@ -43,8 +43,8 @@ Mock client for test (entry: prover-grpc/src/mock_client.rs)
 # build
 > cargo build --release --bin mock-client
 
-# run with proof type: EVM(1), STATE(2), SUPER(3), AGG(4)
-> ./target/release/client-mock --prove <proof_type_int>
+# run
+> ./target/release/client-mock --prove true
 # or
 > ./target/release/client-mock --spec true
 ```

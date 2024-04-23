@@ -3,7 +3,6 @@ mod spec;
 pub mod utils;
 
 use crate::prove::{create_proof, ProofResult};
-use crate::spec::ProofType;
 use crate::utils::{kroma_err, kroma_info};
 use ::utils::check_chain_id;
 use clap::Parser;
@@ -21,7 +20,7 @@ pub trait Rpc {
     /// # Returns
     ///
     /// String of ZkSpec instance which includes below
-    /// 1. proof_type_desc: String,
+    /// 1. pub degree: u32,
     /// 2. pub agg_degree: u32,
     /// 3. pub chain_id: u32,
     /// 4. pub max_txs: u32,
@@ -33,7 +32,7 @@ pub trait Rpc {
 
     #[rpc(name = "prove")]
     /// return proof related to the trace.
-    fn prove(&self, trace: String, proof_type: i32) -> Result<ProofResult>;
+    fn prove(&self, trace: String) -> Result<ProofResult>;
 }
 
 pub struct RpcImpl;
@@ -43,23 +42,10 @@ impl Rpc for RpcImpl {
     ///
     /// # Arguments
     /// * `trace` - A trace of the specific block as a JSON String.
-    /// * `proof_type` - An identifier of proof type (1: Evm, 2: State, 3: Super, 4: Agg)
     ///
     /// # Returns
     /// ProofResult instance which includes proof and final pair.
-    fn prove(&self, trace: String, proof_type_val: i32) -> Result<ProofResult> {
-        // initiate ProofType
-        let proof_type = ProofType::from_value(proof_type_val);
-        if let ProofType::None = proof_type {
-            let msg = format!(
-                "invalid prove param: expected param from 1 to 4, but {:?}",
-                proof_type_val
-            );
-            kroma_err(&msg);
-            let err = jsonrpc_core::Error::invalid_params(msg);
-            return Err(err);
-        }
-
+    fn prove(&self, trace: String) -> Result<ProofResult> {
         // initiate BlockTrace
         let block_trace: BlockTrace = match serde_json::from_slice(trace.as_bytes()) {
             Ok(trace) => trace,
@@ -94,7 +80,7 @@ impl Rpc for RpcImpl {
             return Err(err);
         }
 
-        create_proof(block_trace, proof_type)
+        create_proof(block_trace)
     }
 }
 
@@ -102,7 +88,7 @@ pub struct MockRpcImpl;
 
 impl Rpc for MockRpcImpl {
     /// Regardless of the received trace, it returns a zero proof.
-    fn prove(&self, _trace: String, _proof_type: i32) -> Result<ProofResult> {
+    fn prove(&self, _trace: String) -> Result<ProofResult> {
         kroma_info("return zero proof");
         Ok(ProofResult::new(vec![0; 4640], Some(vec![0; 128])))
     }

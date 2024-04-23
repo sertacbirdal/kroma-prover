@@ -3,7 +3,7 @@ pub mod spec;
 pub mod utils;
 
 use crate::prove::ProofResult;
-use crate::spec::{ProofType, ZkSpec};
+use crate::spec::ZkSpec;
 use crate::utils::kroma_info;
 use clap::Parser;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
@@ -20,23 +20,23 @@ const DEFAULT_RPC_SERVER_ENDPOINT: &str = "http://127.0.0.1:3030";
 #[clap(author, version, about, long_about = None)]
 struct Args {
     #[clap(short, long = "prove")]
-    prove: Option<i32>,
+    prove: Option<bool>,
 
     #[clap(short, long = "spec")]
     spec: Option<bool>,
 }
 
-async fn test_request_proof(cli: HttpClient, proof_type: ProofType) -> bool {
+async fn test_request_proof(cli: HttpClient) -> bool {
     let trace_str =
         fs::read_to_string("zkevm/tests/traces/kroma/multiple_transfers_0.json").unwrap();
     let trace: BlockTrace = serde_json::from_str(&trace_str).unwrap();
 
     kroma_info(format!(
-        "Send 'prove' request: height({}), proof_type({proof_type})",
+        "Send 'prove' request with height({})",
         trace.header.number.unwrap()
     ));
 
-    let params = rpc_params![trace_str, proof_type.to_value()];
+    let params = rpc_params![trace_str];
     let proof_result: ProofResult = cli.request("prove", params).await.unwrap();
 
     kroma_info(format!(
@@ -54,13 +54,11 @@ async fn test_request_spec(cli: HttpClient) -> bool {
 
     kroma_info(format!(
         "Got: \
-        \n - proof_types: {:?}\
         \n - agg_degree: {}\
         \n - degree: {}\
         \n - chain_id: {}\
         \n - max_txs: {}\
         \n - max_call_data: {}",
-        zk_spec.proof_type_desc,
         zk_spec.agg_degree,
         zk_spec.degree,
         zk_spec.chain_id,
@@ -86,7 +84,6 @@ async fn main() {
         let _ = test_request_spec(http_client.clone()).await;
     }
     if args.prove.is_some() {
-        let proof_type = ProofType::from_value(args.prove.expect("The proof type is not allowed."));
-        let _ = test_request_proof(http_client, proof_type).await;
+        let _ = test_request_proof(http_client).await;
     }
 }

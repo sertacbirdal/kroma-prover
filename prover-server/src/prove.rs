@@ -1,15 +1,13 @@
-use crate::spec::ProofType;
 use crate::utils::{kroma_info, kroma_msg};
 use jsonrpc_core::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::fs::create_dir_all;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use types::eth::BlockTrace;
 use utils::Measurer;
-use zkevm::circuit::{EvmCircuit, StateCircuit, SuperCircuit, AGG_DEGREE, DEGREE};
-use zkevm::prover::{AggCircuitProof, Prover, TargetCircuitProof};
+use zkevm::circuit::{AGG_DEGREE, DEGREE};
+use zkevm::prover::{AggCircuitProof, Prover};
 use zkevm::utils::{load_kzg_params, load_or_create_seed};
 
 const PARAMS_DIR: &str = "./kzg_params/";
@@ -28,7 +26,7 @@ impl ProofResult {
     }
 }
 
-pub fn create_proof(trace: BlockTrace, proof_type: ProofType) -> Result<ProofResult> {
+pub fn create_proof(trace: BlockTrace) -> Result<ProofResult> {
     // load or create material for prover
     let params = load_kzg_params(PARAMS_DIR, *DEGREE)
         .unwrap_or_else(|_| panic!("{}", kroma_msg("failed to load kzg params")));
@@ -47,46 +45,7 @@ pub fn create_proof(trace: BlockTrace, proof_type: ProofType) -> Result<ProofRes
     // specify the dir to store the vk and proof of the intermediate circuit.
     prover.debug_dir = out_dir.to_str().unwrap().to_string();
 
-    match proof_type {
-        ProofType::None => {
-            panic!("invalid proof type");
-        }
-        ProofType::Agg => create_agg_proof(prover, trace),
-        _ => create_target_proof(prover, trace, proof_type),
-    }
-}
-
-pub fn create_target_proof(
-    mut prover: Prover,
-    trace: BlockTrace,
-    proof_type: ProofType,
-) -> Result<ProofResult> {
-    kroma_info("start creating proof");
-
-    // generate proof
-    let mut timer = Measurer::new();
-    let proof = match proof_type {
-        ProofType::Evm => prover
-            .create_target_circuit_proof::<EvmCircuit>(&trace)
-            .unwrap_or_else(|_| panic!("{}", kroma_msg("cannot generate evm_proof"))),
-        ProofType::State => prover
-            .create_target_circuit_proof::<StateCircuit>(&trace)
-            .unwrap_or_else(|_| panic!("{}", kroma_msg("cannot generate state_proof"))),
-        ProofType::Super => prover
-            .create_target_circuit_proof::<SuperCircuit>(&trace)
-            .unwrap_or_else(|_| panic!("{}", kroma_msg("cannot generate super_proof"))),
-        _ => {
-            panic!("invalid proof type");
-        }
-    };
-    timer.end(&kroma_msg("finish generating a proof"));
-
-    // store the proof as a file
-    let proof_dir = PathBuf::from(&prover.debug_dir);
-    write_target_proof(&proof_dir, proof.clone(), &proof_type.to_string());
-
-    let proof_result = ProofResult::new(proof.proof, None);
-    Ok(proof_result)
+    create_agg_proof(prover, trace)
 }
 
 pub fn create_agg_proof(mut prover: Prover, trace: BlockTrace) -> Result<ProofResult> {
@@ -106,12 +65,6 @@ pub fn create_agg_proof(mut prover: Prover, trace: BlockTrace) -> Result<ProofRe
 
     let proof_result = ProofResult::new(proof.proof.clone(), Some(proof.final_pair));
     Ok(proof_result)
-}
-
-pub fn write_target_proof(dir: &Path, proof: TargetCircuitProof, proof_type: &str) {
-    let proof_path = dir.join(proof_type.to_string() + ".proof");
-    let mut f = fs::File::create(proof_path).unwrap();
-    f.write_all(proof.proof.as_slice()).unwrap();
 }
 
 pub fn write_agg_proof(dir: &Path, proof: &AggCircuitProof) {
