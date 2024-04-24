@@ -415,11 +415,9 @@ impl Prover {
             log::info!("mock prove agg circuit done");
         }
 
-        let mut proof;
         #[cfg(feature = "tachyon")]
-        {
+        let proof = {
             log::info!("create agg proof by tachyon prover");
-
             let mut tachyon_agg_pk = {
                 let mut pk_bytes: Vec<u8> = vec![];
                 self.agg_pk
@@ -454,12 +452,13 @@ impl Prover {
                 &mut transcript,
             )
             .expect("proof generation should not fail");
-            proof = transcript.finalize();
+            let mut proof = transcript.finalize();
             let proof_last = prover.get_proof();
             proof.extend_from_slice(&proof_last);
-        }
+            proof
+        };
         #[cfg(not(feature = "tachyon"))]
-        {
+        let proof = {
             log::info!("create agg proof");
             create_proof::<KZGCommitmentScheme<_>, ProverGWC<_>, _, _, _, _>(
                 &self.agg_params.as_ref().unwrap(),
@@ -469,8 +468,8 @@ impl Prover {
                 self.rng.clone(),
                 &mut transcript,
             )?;
-            proof = transcript.finalize();
-        }
+            transcript.finalize()
+        };
 
         log::info!(
             "create agg proof done, block proved {}/{}",
@@ -591,9 +590,8 @@ impl Prover {
         }
         let pk = &self.target_circuit_pks[&C::name()];
 
-        let mut proof;
         #[cfg(feature = "tachyon")]
-        {
+        let proof = {
             let mut tachyon_pk = {
                 let mut pk_bytes: Vec<u8> = vec![];
                 pk.write(&mut pk_bytes, halo2_proofs::SerdeFormat::RawBytesUnchecked)
@@ -620,12 +618,13 @@ impl Prover {
                 &mut transcript,
             )
             .expect("proof generation should not fail");
-            proof = transcript.finalize();
+            let mut proof = transcript.finalize();
             let proof_last = prover.get_proof();
             proof.extend_from_slice(&proof_last);
-        }
+            proof
+        };
         #[cfg(not(feature = "tachyon"))]
-        {
+        let proof = {
             create_proof::<KZGCommitmentScheme<_>, ProverGWC<_>, _, _, _, _>(
                 &self.params,
                 pk,
@@ -634,8 +633,8 @@ impl Prover {
                 self.rng.clone(),
                 &mut transcript,
             )?;
-            proof = transcript.finalize();
-        }
+            transcript.finalize()
+        };
 
         info!(
             "Create {} proof of block {} ... block {} Successfully!",
