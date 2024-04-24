@@ -6,12 +6,12 @@ This [Prover](https://github.com/kroma-network/kroma/blob/dev/specs/zkevm-prover
 ## Requirements
 
 - Rust(rustc 1.70.0-nightly)
-- Golang (go1.20.3)
+- Golang (go1.21.0)
 - `axel` installed for downloading KZG params
 
 ## Download KZG Params
 ```shell
-# Download Params for KZG
+# Download Params for KZG with degree 21 and 26
 > sh download_params.sh
 ```
 
@@ -22,9 +22,11 @@ Prover server (entry: prover-server/src/server_main.rs)
 ```shell
 # build
 > cargo build --release --bin prover-server
+# or build with Tachyon
+> cargo build --release --bin prover-server --features tachyon
 
-# run
-> ./target/release/prover-server --endpoint "127.0.0.1:3030"
+# run (default ip: "127.0.0.1:3030")
+> CHAIN_ID=<CHAIN_ID> ./target/release/prover-server --endpoint <SERVER_IP>
 ```
 
 Mock Prover server (which always return zero proof for test)
@@ -33,8 +35,8 @@ Mock Prover server (which always return zero proof for test)
 # build
 > cargo build --release --bin prover-server --features mock-server
 
-# run
-> ./target/release/prover-server --endpoint "127.0.0.1:3030"
+# run (default ip: "127.0.0.1:3030")
+> CHAIN_ID=<CHAIN_ID> ./target/release/prover-server --endpoint "127.0.0.1:3030"
 ```
 
 Mock client for test (entry: prover-grpc/src/mock_client.rs)
@@ -51,12 +53,15 @@ Mock client for test (entry: prover-grpc/src/mock_client.rs)
 
 ## Legacy Binaries
 
-Setup (entry: bin/src/setup.rs)
+Setup (entry: bin/src/setup.rs)  
+It generates parameter(s) for KZG into 
 
 ```shell
+# build
 > cargo build --release --bin setup
 
-> ./target/release/setup --help
+# run (setup KZG parameters with degree 21 and 26 if ommitting `n` option)
+> ./target/release/setup --n <DEGREE>
 ```
 
 If you run into linking issues during setup you may need to run
@@ -70,9 +75,13 @@ to move the zktrielib into a path where your linker can locate it
 Prove (entry: bin/src/prove.rs)
 
 ```shell
+# build
 > cargo build --release --bin prove
+# or build with Tachyon
+> cargo build --release --bin prove --features tachyon
 
-> ./target/release/prove --help
+# CIRCUIT_TYPE: [evm, state, agg], `gen_sol` can be ommitted (default: true)
+> CHAIN_ID=<CHAIN_ID> ./target/release/prove --trace <TRACE_JSON_PATH> --circuit <CIRCUIT_TYPE> --gen_sol true
 ```
 
 ## License
