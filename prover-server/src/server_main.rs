@@ -8,7 +8,7 @@ use prover_server::prover_error::ProverError;
 use prover_server::spec::ZkSpec;
 use prover_server::utils::{is_cancun_trace, kroma_info};
 use types::eth::BlockTrace;
-use utils::check_chain_id;
+use utils::{check_chain_id, is_tachyon};
 use zkevm::circuit::{CHAIN_ID, MAX_TXS};
 use zkevm::version::{self, check_trace_version, panic_if_wrong_circuit_version};
 
@@ -120,9 +120,10 @@ fn main() {
 
     kroma_info(format!("Prover server starting on {endpoint}."));
     kroma_info(format!(
-        "ChainId: {:?}, ProverVersion: {:?}",
+        "ChainId: {:?}, ProverVersion: {:?}, Tachyon: {:?}",
         chain_id,
         version::as_string(),
+        is_tachyon()
     ));
     let server = ServerBuilder::new(io)
         .threads(3)
