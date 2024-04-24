@@ -320,26 +320,23 @@ impl Prover {
     pub fn create_agg_circuit_proof(
         &mut self,
         block_trace: &BlockTrace,
-        create_verifier_sol: bool,
     ) -> anyhow::Result<AggCircuitProof> {
-        self.create_agg_circuit_proof_batch(&[block_trace.clone()], create_verifier_sol)
+        self.create_agg_circuit_proof_batch(&[block_trace.clone()])
     }
 
     pub fn create_agg_circuit_proof_batch(
         &mut self,
         block_traces: &[BlockTrace],
-        create_verifier_sol: bool,
     ) -> anyhow::Result<AggCircuitProof> {
         // See comments in `create_solidity_verifier()`.
         let circuit_results: Vec<ProvedCircuit> =
             vec![self.prove_circuit::<SuperCircuit>(block_traces)?];
-        self.create_agg_circuit_proof_impl(circuit_results, create_verifier_sol)
+        self.create_agg_circuit_proof_impl(circuit_results)
     }
 
     pub fn create_agg_circuit_proof_impl(
         &mut self,
         circuit_results: Vec<ProvedCircuit>,
-        create_verifier_sol: bool,
     ) -> anyhow::Result<AggCircuitProof> {
         ///////////////////////////// build verifier circuit from block result ///////////////////
         let target_circuits = [0];

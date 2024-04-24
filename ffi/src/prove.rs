@@ -25,7 +25,7 @@ pub unsafe extern "C" fn create_agg_proof(trace_char: *const c_char) -> *const c
     let proof = PROVER
         .get_mut()
         .unwrap()
-        .create_agg_circuit_proof(&trace, false)
+        .create_agg_circuit_proof(&trace)
         .unwrap();
     let proof_bytes = serde_json::to_vec(&proof).unwrap();
     vec_to_c_char(proof_bytes)
@@ -39,7 +39,7 @@ pub unsafe extern "C" fn create_agg_proof_multi(trace_char: *const c_char) -> *c
     let proof = PROVER
         .get_mut()
         .unwrap()
-        .create_agg_circuit_proof_batch(traces.as_slice(), false)
+        .create_agg_circuit_proof_batch(traces.as_slice())
         .unwrap();
     let proof_bytes = serde_json::to_vec(&proof).unwrap();
     vec_to_c_char(proof_bytes)
