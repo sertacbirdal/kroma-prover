@@ -10,7 +10,7 @@ use prover_server::utils::{is_cancun_trace, kroma_info};
 use types::eth::BlockTrace;
 use utils::check_chain_id;
 use zkevm::circuit::{CHAIN_ID, MAX_TXS};
-use zkevm::version::{self, check_trace_version};
+use zkevm::version::{self, check_trace_version, panic_if_wrong_circuit_version};
 
 #[rpc]
 pub trait Rpc {
@@ -107,6 +107,7 @@ fn main() {
     dotenv::dotenv().ok();
     env_logger::init();
 
+    panic_if_wrong_circuit_version();
     let chain_id = check_chain_id();
     let args = Args::parse();
     let endpoint = args.endpoint.unwrap_or("127.0.0.1:3030".to_string());

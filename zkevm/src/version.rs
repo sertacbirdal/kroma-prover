@@ -10,6 +10,9 @@ pub const PATCH: u32 = 5;
 /// Trace versions that are compatible with Prover.
 pub const TRACE_VERSIONS: [&str; 1] = ["0.5.1"];
 
+/// ZKEVM circuit versions that are compatible with Prover.
+pub const ZKEVM_CIRCUIT_VERSIONS: [&str; 1] = ["0.2.0"];
+
 /// Export versions as string
 pub fn as_string() -> String {
     format!("{}.{}.{}", MAJOR, MINOR, PATCH)
@@ -53,9 +56,21 @@ pub fn check_trace_version(trace_version_str: &str) -> bool {
     TRACE_VERSIONS.contains(&formatted_version.as_str())
 }
 
+pub fn panic_if_wrong_circuit_version() {
+    let circuit_version = zkevm_circuits::version::as_string();
+    if !ZKEVM_CIRCUIT_VERSIONS.contains(&circuit_version.as_str()) {
+        panic!(
+            "Supporting ZKEVM_CIRCUITS versions: {:?}, but actual: {:?}",
+            ZKEVM_CIRCUIT_VERSIONS, circuit_version
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::version::{as_string, check_trace_version, MAJOR, MINOR, PATCH};
+    use crate::version::{
+        as_string, check_trace_version, panic_if_wrong_circuit_version, MAJOR, MINOR, PATCH,
+    };
 
     #[test]
     fn test_version_string() {
@@ -77,5 +92,10 @@ mod tests {
 
         let trace_ver_wrong = "v0.1.0";
         assert!(!check_trace_version(trace_ver_wrong));
+    }
+
+    #[test]
+    fn test_check_circuit_version() {
+        panic_if_wrong_circuit_version();
     }
 }
