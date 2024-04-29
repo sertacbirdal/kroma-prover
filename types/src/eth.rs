@@ -114,7 +114,7 @@ impl TransactionTrace {
                 let mint = self.mint.unwrap();
                 let source_hash = self.source_hash.unwrap();
 
-                let mint_json_string = format!("\"mint\": \"{mint:#?}\"");
+                let mint_json_string = format!("\"mint\": \"{mint:#x}\"");
                 let source_hash_json_string = format!("\"sourceHash\": \"{source_hash:#?}\"");
                 let json_value = format!("{{{mint_json_string}, {source_hash_json_string}}}");
                 tx.other = serde_json::from_str(json_value.as_str()).unwrap();
