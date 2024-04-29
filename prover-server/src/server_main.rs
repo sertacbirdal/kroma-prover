@@ -10,7 +10,7 @@ use prover_server::utils::{is_cancun_trace, kroma_info};
 use types::eth::BlockTrace;
 use utils::check_chain_id;
 use zkevm::circuit::{CHAIN_ID, MAX_TXS};
-use zkevm::version;
+use zkevm::version::{self, check_trace_version};
 
 #[rpc]
 pub trait Rpc {
@@ -59,6 +59,11 @@ impl Rpc for RpcImpl {
                 return JsonResult::Err(JsonError::from(err));
             }
         };
+
+        if !check_trace_version(&block_trace.version) {
+            let err = ProverError::trace_version_error(block_trace.version);
+            return JsonResult::Err(JsonError::from(err));
+        }
 
         // check number of txs in the trace
         let tx_count = block_trace.transactions.len();

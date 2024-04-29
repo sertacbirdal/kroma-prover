@@ -15,6 +15,7 @@ where
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone)]
 pub struct BlockTrace {
+    pub version: String,
     #[serde(rename = "chainID", default, deserialize_with = "u64_to_word")]
     pub chain_id: U256,
     pub coinbase: AccountProofWrapper,

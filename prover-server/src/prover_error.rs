@@ -15,6 +15,8 @@ pub enum ErrorCode {
     TraceParseError,
     /// Received a Trace with a different chain id from the server.
     ChainIdNotMatched,
+    /// Received a trace containing an unsupported OPCode.
+    TraceVersionNotSupported,
     /// Received a trace containing transactions that exceed `MAX_TXS`.
     TooManyTxs,
     /// Received a trace containing an unsupported OPCode.
@@ -29,6 +31,7 @@ impl ErrorCode {
             // Trace error starts with `2`
             ErrorCode::TraceParseError => 2000,
             ErrorCode::ChainIdNotMatched => 2001,
+            ErrorCode::TraceVersionNotSupported => 2002,
             // Spec. error starts with `3`
             ErrorCode::TooManyTxs => 3000,
             ErrorCode::OPCodeNotSupported => 3001,
@@ -42,6 +45,7 @@ impl From<i64> for ErrorCode {
             1000 => ErrorCode::KZGParamsNotFound,
             2000 => ErrorCode::TraceParseError,
             2001 => ErrorCode::ChainIdNotMatched,
+            2002 => ErrorCode::TraceVersionNotSupported,
             3000 => ErrorCode::TooManyTxs,
             3001 => ErrorCode::OPCodeNotSupported,
             _ => panic!("not supported code: {:?}", code),
@@ -93,6 +97,18 @@ impl ProverError {
     /// Creates new `TraceParseError`
     pub fn trace_parse_error(msg: String) -> Self {
         let err = Self::new(ErrorCode::TraceParseError, Some(msg));
+        kroma_err(err.to_string());
+        err
+    }
+
+    /// Creates new `TraceVersionNotSupported`
+    pub fn trace_version_error(trace_version: String) -> Self {
+        let msg = format!(
+            "Supporting trace versions: {:?}, but actual: {:?}",
+            zkevm::version::TRACE_VERSIONS,
+            trace_version
+        );
+        let err = Self::new(ErrorCode::TraceVersionNotSupported, Some(msg));
         kroma_err(err.to_string());
         err
     }

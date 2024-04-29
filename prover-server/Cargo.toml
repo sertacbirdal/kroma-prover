@@ -47,3 +47,4 @@ path = "src/mock_client.rs"
 default = []
 mock-server = []
 tachyon = ["utils/tachyon", "zkevm/tachyon"]
+enable-mock-trace = ["zkevm/enable-mock-trace"]

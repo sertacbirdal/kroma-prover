@@ -7383,6 +7383,7 @@ dependencies = [
  "procfs",
  "rand 0.8.5",
  "rand_xorshift",
+ "regex",
  "serde",
  "serde_derive",
  "serde_json",

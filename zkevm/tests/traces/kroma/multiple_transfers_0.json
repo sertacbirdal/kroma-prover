@@ -1,6 +1,6 @@
 {
   "chainID": 901,
-  "version": "0.1.0-unstable",
+  "version": "TEST",
   "coinbase": {
     "address": "0x0000000000000000000000000000000000000000",
     "nonce": 2,
