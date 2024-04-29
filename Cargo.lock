@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "bin"
-version = "0.3.0"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "clap 3.2.25",
@@ -4474,7 +4474,7 @@ dependencies = [
 
 [[package]]
 name = "prover-server"
-version = "0.1.0"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "clap 4.3.3",

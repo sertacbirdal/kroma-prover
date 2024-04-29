@@ -10,6 +10,7 @@ use prover_server::utils::{is_cancun_trace, kroma_info};
 use types::eth::BlockTrace;
 use utils::check_chain_id;
 use zkevm::circuit::{CHAIN_ID, MAX_TXS};
+use zkevm::version;
 
 #[rpc]
 pub trait Rpc {
@@ -111,8 +112,11 @@ fn main() {
     #[cfg(feature = "mock-server")]
     io.extend_with(MockRpcImpl.to_delegate());
 
+    kroma_info(format!("Prover server starting on {endpoint}."));
     kroma_info(format!(
-        "Prover server starting on {endpoint}. CHAIN_ID: {chain_id}"
+        "ChainId: {:?}, ProverVersion: {:?}",
+        chain_id,
+        version::as_string(),
     ));
     let server = ServerBuilder::new(io)
         .threads(3)
