@@ -3,6 +3,7 @@ pub mod io;
 pub mod prover;
 pub mod utils;
 pub mod verifier;
+pub mod version;
 
 pub mod proof {
     use crate::prover::AggCircuitProof;

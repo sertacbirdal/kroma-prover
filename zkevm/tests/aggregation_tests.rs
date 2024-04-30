@@ -18,6 +18,7 @@ use zkevm::{io::*, prover::Prover};
 mod test_util;
 use test_util::{init, load_block_traces_for_test, PARAMS_DIR, SEED_PATH};
 
+#[cfg(feature = "prove_verify")]
 fn verifier_circuit_prove(output_dir: &str) {
     log::info!("start verifier_circuit_prove, output_dir {}", output_dir);
     let mut out_dir = PathBuf::from_str(output_dir).unwrap();
@@ -49,6 +50,7 @@ fn verifier_circuit_prove(output_dir: &str) {
     log::info!("output files to {}", output_dir);
 }
 
+#[cfg(feature = "prove_verify")]
 fn verifier_circuit_generate_solidity(dir: &str) {
     let mut folder = PathBuf::from_str(dir).unwrap();
 
@@ -95,6 +97,7 @@ fn verifier_circuit_verify_proof() {
     assert!(verifier.verify_agg_circuit_proof(agg_proof).is_ok())
 }
 
+#[cfg(feature = "prove_verify")]
 fn verifier_circuit_verify(d: &str) {
     log::info!("start verifier_circuit_verify");
     let mut folder = PathBuf::from_str(d).unwrap();

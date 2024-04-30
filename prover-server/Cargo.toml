@@ -1,6 +1,6 @@
 [package]
 name = "prover-server"
-version = "0.1.0"
+version = "0.1.5"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -47,3 +47,4 @@ path = "src/mock_client.rs"
 default = []
 mock-server = []
 tachyon = ["utils/tachyon", "zkevm/tachyon"]
+enable-mock-trace = ["zkevm/enable-mock-trace"]

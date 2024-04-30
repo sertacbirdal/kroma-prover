@@ -320,26 +320,23 @@ impl Prover {
     pub fn create_agg_circuit_proof(
         &mut self,
         block_trace: &BlockTrace,
-        create_verifier_sol: bool,
     ) -> anyhow::Result<AggCircuitProof> {
-        self.create_agg_circuit_proof_batch(&[block_trace.clone()], create_verifier_sol)
+        self.create_agg_circuit_proof_batch(&[block_trace.clone()])
     }
 
     pub fn create_agg_circuit_proof_batch(
         &mut self,
         block_traces: &[BlockTrace],
-        create_verifier_sol: bool,
     ) -> anyhow::Result<AggCircuitProof> {
         // See comments in `create_solidity_verifier()`.
         let circuit_results: Vec<ProvedCircuit> =
             vec![self.prove_circuit::<SuperCircuit>(block_traces)?];
-        self.create_agg_circuit_proof_impl(circuit_results, create_verifier_sol)
+        self.create_agg_circuit_proof_impl(circuit_results)
     }
 
     pub fn create_agg_circuit_proof_impl(
         &mut self,
         circuit_results: Vec<ProvedCircuit>,
-        create_verifier_sol: bool,
     ) -> anyhow::Result<AggCircuitProof> {
         ///////////////////////////// build verifier circuit from block result ///////////////////
         let target_circuits = [0];
@@ -418,11 +415,9 @@ impl Prover {
             log::info!("mock prove agg circuit done");
         }
 
-        let mut proof;
         #[cfg(feature = "tachyon")]
-        {
+        let proof = {
             log::info!("create agg proof by tachyon prover");
-
             let mut tachyon_agg_pk = {
                 let mut pk_bytes: Vec<u8> = vec![];
                 self.agg_pk
@@ -457,12 +452,13 @@ impl Prover {
                 &mut transcript,
             )
             .expect("proof generation should not fail");
-            proof = transcript.finalize();
+            let mut proof = transcript.finalize();
             let proof_last = prover.get_proof();
             proof.extend_from_slice(&proof_last);
-        }
+            proof
+        };
         #[cfg(not(feature = "tachyon"))]
-        {
+        let proof = {
             log::info!("create agg proof");
             create_proof::<KZGCommitmentScheme<_>, ProverGWC<_>, _, _, _, _>(
                 &self.agg_params.as_ref().unwrap(),
@@ -472,8 +468,8 @@ impl Prover {
                 self.rng.clone(),
                 &mut transcript,
             )?;
-            proof = transcript.finalize();
-        }
+            transcript.finalize()
+        };
 
         log::info!(
             "create agg proof done, block proved {}/{}",
@@ -594,9 +590,8 @@ impl Prover {
         }
         let pk = &self.target_circuit_pks[&C::name()];
 
-        let mut proof;
         #[cfg(feature = "tachyon")]
-        {
+        let proof = {
             let mut tachyon_pk = {
                 let mut pk_bytes: Vec<u8> = vec![];
                 pk.write(&mut pk_bytes, halo2_proofs::SerdeFormat::RawBytesUnchecked)
@@ -623,12 +618,13 @@ impl Prover {
                 &mut transcript,
             )
             .expect("proof generation should not fail");
-            proof = transcript.finalize();
+            let mut proof = transcript.finalize();
             let proof_last = prover.get_proof();
             proof.extend_from_slice(&proof_last);
-        }
+            proof
+        };
         #[cfg(not(feature = "tachyon"))]
-        {
+        let proof = {
             create_proof::<KZGCommitmentScheme<_>, ProverGWC<_>, _, _, _, _>(
                 &self.params,
                 pk,
@@ -637,8 +633,8 @@ impl Prover {
                 self.rng.clone(),
                 &mut transcript,
             )?;
-            proof = transcript.finalize();
-        }
+            transcript.finalize()
+        };
 
         info!(
             "Create {} proof of block {} ... block {} Successfully!",

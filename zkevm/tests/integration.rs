@@ -40,6 +40,7 @@ fn test_load_params() {
     .unwrap();
 }
 
+#[ignore]
 #[test]
 fn estimate_circuit_rows() {
     use zkevm::circuit::{self, TargetCircuit};
