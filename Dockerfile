@@ -2,7 +2,7 @@ FROM zktachyon/halo2:jammy-latest AS builder
 LABEL maintainer="The Tachyon Authors <tachyon-discuss@kroma.network>"
 
 ARG RUST_TOOLCHAIN_VERSION=nightly-2023-04-10
-ARG GO_VERSION=1.20.3
+ARG GO_VERSION=1.22.2
 
 RUN apt update && \
     apt install -y --no-install-recommends \
