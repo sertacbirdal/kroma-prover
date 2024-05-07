@@ -47,6 +47,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/arm64,linux/amd64
+          platforms: linux/amd64
           push: true
           tags: kromanetwork/prover:${{ steps.prepare.outputs.docker-tag }},kromanetwork/prover:latest
