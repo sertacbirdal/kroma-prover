@@ -135,7 +135,7 @@ fn main() {
             CircuitType::AGG => {
                 let mut proof_path = PathBuf::from(&trace_name).join("agg.proof");
                 let agg_proof = prover
-                    .create_agg_circuit_proof(&trace)
+                    .create_agg_circuit_proof(&trace, args.gen_sol)
                     .expect("cannot generate agg_proof");
                 fs::create_dir_all(&proof_path).unwrap();
                 agg_proof.write_to_dir(&mut proof_path);

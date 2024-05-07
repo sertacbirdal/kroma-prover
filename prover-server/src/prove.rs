@@ -58,7 +58,7 @@ pub fn create_agg_proof(mut prover: Prover, trace: BlockTrace) -> Result<ProofRe
     // generate proof
     let mut timer = Measurer::new();
     let proof = prover
-        .create_agg_circuit_proof(&trace)
+        .create_agg_circuit_proof(&trace, false)
         .unwrap_or_else(|_| panic!("{}", kroma_msg("cannot generate agg_proof")));
     timer.end(&kroma_msg("finish generating a proof"));
 
