@@ -11,7 +11,7 @@ pub const PATCH: u32 = 5;
 pub const TRACE_VERSIONS: [&str; 3] = ["0.5.1", "0.5.2", "0.5.3"];
 
 /// ZKEVM circuit versions that are compatible with Prover.
-pub const ZKEVM_CIRCUIT_VERSIONS: [&str; 1] = ["0.2.0"];
+pub const ZKEVM_CIRCUIT_VERSIONS: [&str; 1] = ["0.2.1"];
 
 /// Export versions as string
 pub fn as_string() -> String {
