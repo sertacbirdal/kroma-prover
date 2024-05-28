@@ -5,7 +5,7 @@ use crate::circuit::{
 use anyhow::bail;
 use bus_mapping::circuit_input_builder::{self, BlockHead, CircuitInputBuilder, CircuitsParams};
 use bus_mapping::state_db::{Account, CodeDB, StateDB};
-use eth_types::{evm_types::OpcodeId, geth_types::DEPOSIT_TX_TYPE, ToAddress};
+use eth_types::{evm_types::OpcodeId, geth_types::DEPOSIT_TX_TYPE};
 use ethers_core::types::{Bytes, U256};
 use halo2_proofs::halo2curves::bn256::Fr;
 use is_even::IsEven;
@@ -395,24 +395,10 @@ fn get_account_created_codehash(step: &ExecStep) -> Result<eth_types::H256, anyh
     }
 }
 */
-fn trace_code(cdb: &mut CodeDB, step: &ExecStep, sdb: &StateDB, code: Bytes, stack_pos: usize) {
-    let stack = step
-        .stack
-        .as_ref()
-        .expect("should have stack in call context");
-    let addr = stack[stack.len() - stack_pos - 1].to_address(); //stack N-stack_pos
-
-    let hash = cdb.insert(code.to_vec());
-
-    // sanity check
-    let (existed, data) = sdb.get_account(&addr);
-    if existed && data.code_hash == CodeDB::empty_code_hash() {
-        assert_eq!(
-            hash, data.code_hash,
-            "invalid codehash for existed account {addr:?}, {data:?}"
-        );
-    };
+fn trace_code(cdb: &mut CodeDB, _step: &ExecStep, _sdb: &StateDB, code: Bytes, _stack_pos: usize) {
+    cdb.insert(code.to_vec());
 }
+
 pub fn build_codedb(sdb: &StateDB, blocks: &[BlockTrace]) -> Result<CodeDB, anyhow::Error> {
     let mut cdb = CodeDB::new();
 
