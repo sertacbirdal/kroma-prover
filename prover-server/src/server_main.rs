@@ -6,7 +6,9 @@ use prove::{create_proof, ProofResult, PARAMS_DIR};
 use prover_server::prove;
 use prover_server::prover_error::ProverError;
 use prover_server::spec::ZkSpec;
-use prover_server::utils::{is_cancun_trace, kroma_info, panic_if_kzg_params_not_found};
+use prover_server::utils::{
+    is_cancun_trace, kroma_info, panic_if_kzg_params_is_not_official, panic_if_kzg_params_not_found,
+};
 use types::eth::BlockTrace;
 use utils::{check_chain_id, is_tachyon};
 use zkevm::circuit::{CHAIN_ID, MAX_TXS};
@@ -109,6 +111,8 @@ fn main() {
 
     panic_if_wrong_circuit_version();
     panic_if_kzg_params_not_found(PARAMS_DIR);
+    panic_if_kzg_params_is_not_official(PARAMS_DIR);
+
     let chain_id = check_chain_id();
     let args = Args::parse();
     let endpoint = args.endpoint.unwrap_or("127.0.0.1:3030".to_string());
