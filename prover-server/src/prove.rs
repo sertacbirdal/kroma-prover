@@ -10,7 +10,7 @@ use zkevm::circuit::{AGG_DEGREE, DEGREE};
 use zkevm::prover::{AggCircuitProof, Prover};
 use zkevm::utils::{load_kzg_params, load_or_create_seed};
 
-const PARAMS_DIR: &str = "./kzg_params/";
+pub const PARAMS_DIR: &str = "./kzg_params/";
 const SEED_FILE: &str = "./rng_seed";
 const OUT_PROOF_DIR: &str = "./out_proof/";
 
