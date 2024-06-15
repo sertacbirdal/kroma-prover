@@ -1,3 +1,4 @@
+
 # Kroma Prover
 [Kroma](https://github.com/kroma-network/kroma) is an Ethereum layer 2 network consisting of entities such as Proposer, Validators, Challengers, and more. The detailed explanations about our network and its entities can be found [here](https://github.com/kroma-network/kroma/blob/dev/specs/introduction.md).
 
